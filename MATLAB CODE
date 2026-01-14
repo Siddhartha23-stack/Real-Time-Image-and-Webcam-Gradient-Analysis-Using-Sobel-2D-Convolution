@@ -1,0 +1,114 @@
+
+%% real time Image & Webcam Edge/Gradient Detection
+clc; clear; close all;
+
+fprintf('Select Mode:\n1. Process an Image\n2. Use Live Webcam\n');
+mode = input('Enter 1 or 2: ');
+
+%% --- Sobel Kernels ---
+Gx = [-1 0 1; -2 0 2; -1 0 1];
+Gy = [-1 -2 -1; 0 0 0; 1 2 1];
+
+switch mode
+    %% --- IMAGE MODE ---
+    case 1
+        imgPath = input('Enter image file name or path (e.g., "peppers.png"): ','s');
+        try
+            img = imread(imgPath);
+        catch
+            warning('Image not found. Using built-in image.');
+            img = imread('cameraman.tif');
+        end
+        
+        % Convert to grayscale
+        if size(img,3) == 3
+            I_gray = rgb2gray(img);
+        else
+            I_gray = img;
+        end
+        I = double(I_gray);
+        
+        % Gradients
+        I_x = conv2(I,Gx,'same');
+        I_y = conv2(I,Gy,'same');
+        G_mag = sqrt(I_x.^2 + I_y.^2);
+        G_norm = uint8(G_mag / max(G_mag(:)) * 255);
+        T = 100;
+        G_edges = G_norm > T;
+        
+        % Visualization
+        figure('Name','Image Gradients & Edge Detection');
+        subplot(2,3,1); imshow(I_gray); title('Original Grayscale');
+        subplot(2,3,2); imshow(I_x,[]); title('Horizontal Gradient');
+        subplot(2,3,3); imshow(I_y,[]); title('Vertical Gradient');
+        subplot(2,3,4); imshow(G_mag,[]); title('Gradient Magnitude');
+        subplot(2,3,5); imshow(G_edges); title(sprintf('Binary Edge (T>%d)',T));
+        subplot(2,3,6); imshow(G_norm); title('Normalized Gradient (0-255)');
+        
+    %% --- WEBCAM MODE ---
+    case 2
+        try
+            cam = webcam;
+        catch
+            error('Webcam not found or support package missing.');
+        end
+        
+        hFig = figure('Name','Live Webcam');
+        set(hFig,'KeyPressFcn',@keyPressCallback);
+        paused = false;
+        quitFlag = false;
+        gradShown = false;
+        
+        fprintf('Live webcam started.\nPress "p" to pause & show gradient/edges.\n');
+        fprintf('Press "r" to resume live feed, "q" to quit.\n');
+        
+        while ~quitFlag
+            frame = snapshot(cam);
+            
+            if ~paused
+                imshow(frame); title('Live Webcam'); drawnow;
+                gradShown = false;
+            else
+                if ~gradShown
+                    % Compute grayscale and gradients for paused frame
+                    I_gray = rgb2gray(frame);
+                    I = double(I_gray);
+                    I_x = conv2(I,Gx,'same');
+                    I_y = conv2(I,Gy,'same');
+                    G_mag = sqrt(I_x.^2 + I_y.^2);
+                    G_norm = uint8(G_mag / max(G_mag(:)) * 255);
+                    T = 100;
+                    G_edges = G_norm > T;
+                    
+                    figure('Name','Paused Frame Gradients & Edges');
+                    subplot(2,3,1); imshow(I_gray); title('Original Grayscale');
+                    subplot(2,3,2); imshow(I_x,[]); title('Horizontal Gradient');
+                    subplot(2,3,3); imshow(I_y,[]); title('Vertical Gradient');
+                    subplot(2,3,4); imshow(G_mag,[]); title('Gradient Magnitude');
+                    subplot(2,3,5); imshow(G_edges); title(sprintf('Binary Edge (T>%d)',T));
+                    subplot(2,3,6); imshow(G_norm); title('Normalized Gradient (0-255)');
+                    
+                    gradShown = true;
+                end
+            end
+            pause(0.05);  % small delay for responsiveness
+        end
+        
+       
+        close all;
+        
+    otherwise
+        error('Invalid selection. Enter 1 or 2.');
+end
+
+%% --- Nested function for key press ---
+function keyPressCallback(~,event)
+    switch lower(event.Key)
+        case 'p'
+            assignin('base','paused',true);
+        case 'r'
+            assignin('base','paused',false);
+        case 'q'
+            assignin('base','quitFlag',true);
+    end
+end
