@@ -48,4 +48,6 @@ Adaptive thresholding
 
 Canny edge comparison
 
-Performance/FPS optimization for real-time processing[real time gradient analyisis .pdf](https://github.com/user-attachments/files/24614925/real.time.gradient.analyisis.pdf)
+Performance/FPS optimization for real-time processing[real time gradient analyisis .pdf]
+
+(https://github.com/user-attachments/files/24614925/real.time.gradient.analyisis.pdf)
